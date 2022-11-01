@@ -12,6 +12,7 @@
         <module>es-service</module>
         <module>netty</module>
         <module>es-base-service</module>
+        <module>gateway</module>
     </modules>
 
     <parent>

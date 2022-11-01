@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
  * @since 2022/11/1
  **/
 @RestController
-@RequestMapping("/stu")
+@RequestMapping("/search")
 public class StudentController {
     @Autowired
     private RestHighLevelClient restHighLevelClient;
