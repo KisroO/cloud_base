@@ -1,0 +1,13 @@
+server:
+  port: 7200
+
+
+# 可以通过yml配置，也可以代码在configuration->set
+#hbase:
+#  config:
+#    hbase.master: 172.28.0.34:2181
+#    hbase.zookeepre.quorum: 172.28.0.34:2181
+#        root-dir: /hbase
+#      client:
+#        username: root
+#        password: Map0935H@eY3
