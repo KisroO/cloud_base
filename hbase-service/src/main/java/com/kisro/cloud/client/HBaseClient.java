@@ -1,9 +1,13 @@
 package com.kisro.cloud.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kisro.cloud.config.HBaseConfig;
+import com.kisro.cloud.pojo.RowResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -143,5 +148,34 @@ public class HBaseClient {
             log.error("delete row error, row key: {}, cause: {}", rowKey, e);
         }
 
+    }
+
+    public String selectOneRow(String tableName, String rowKey) {
+        Result result = null;
+        try {
+            Table table = connection.getTable(TableName.valueOf(tableName));
+            Get get = new Get(rowKey.getBytes(StandardCharsets.UTF_8));
+            result = table.get(get);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assert result != null;
+        String rowK = Bytes.toString(CellUtil.cloneRow(result.rawCells()[0]));
+        String columnFamilyValue = Bytes.toString(CellUtil.cloneFamily(result.rawCells()[0]));
+        String columnQualifier = Bytes.toString(CellUtil.cloneQualifier(result.rawCells()[0]));
+        String values = Bytes.toString(CellUtil.cloneValue(result.rawCells()[0]));
+        RowResult rowResult = new RowResult();
+        rowResult.setRowKey(rowKey)
+                .setColumnFamily(columnFamilyValue)
+                .setColumnQualifier(columnQualifier)
+                .setRowValue(values);
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(rowResult);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }

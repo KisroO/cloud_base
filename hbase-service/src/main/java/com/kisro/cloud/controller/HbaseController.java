@@ -56,5 +56,9 @@ public class HbaseController {
         return "column has deleted";
     }
 
+    @GetMapping("/selectOneRow")
+    public String selectOneRow() {
+        return client.selectOneRow(TABLE_NAME, "1");
+    }
 
 }

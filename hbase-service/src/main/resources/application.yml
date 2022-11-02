@@ -11,3 +11,7 @@ server:
 #      client:
 #        username: root
 #        password: Map0935H@eY3
+spring:
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy:MM:dd HH:mm:ss
