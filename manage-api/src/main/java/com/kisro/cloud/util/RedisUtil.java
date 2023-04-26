@@ -1,32 +1,36 @@
 package com.kisro.cloud.util;
 
-import lombok.AllArgsConstructor;
+import com.alibaba.fastjson.JSONObject;
+import com.kisro.cloud.pojo.bo.OnlineStatusVo;
+import com.nex.bu1.json.JsonEx;
+import com.nex.bu1.lang.ObjEx;
+import com.nex.bu1.util.ListEx;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * @author Kisro
  * @since 2022/10/26
  **/
 @Component
-@AllArgsConstructor
 public class RedisUtil {
-    private RedisTemplate redisTemplate;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
-    public <T> void set(String k, T v) {
-        redisTemplate.opsForValue().set(k, v);
+    private final String KEY_PREFIX = "dispatcher:nd:";
+
+    public void set(String k, Object v) {
+        redisTemplate.opsForValue().set(k, JSONObject.toJSONString(v));
     }
 
-    public <T> void setCacheObject(final String key, final T value, final Long timeout, final TimeUnit timeUnit) {
-        redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
-    }
 
     public Boolean hasKey(String key) {
         return redisTemplate.hasKey(key);
@@ -41,25 +45,50 @@ public class RedisUtil {
         return redisTemplate.delete(key);
     }
 
-    public <T> List<T> getCacheList(final String key) {
-        return redisTemplate.opsForList().range(key, 0, -1);
+    public void updateOnlineStatus(String key, String hashKey, OnlineStatusVo cacheVo, String status) {
+        if ("ONLINE".equals(status)) {
+            vehicleOnline(key, hashKey, cacheVo);
+        } else {
+            vehicleOffline(key, hashKey, cacheVo.getIccid());
+        }
     }
 
-    public <T> Set<T> getCacheSet(final String key) {
-        return redisTemplate.opsForSet().members(key);
+    public void vehicleOnline(String key, String hashKey, OnlineStatusVo cacheVo) {
+        HashOperations<String, Object, Object> hashOperator = redisTemplate.opsForHash();
+        List<OnlineStatusVo> onlineDevices;
+        if (hashOperator.hasKey(KEY_PREFIX + key, hashKey)) {
+            String cacheStr = (String) hashOperator.get(KEY_PREFIX + key, hashKey);
+            onlineDevices = JsonEx.parseArray(cacheStr, OnlineStatusVo.class);
+            onlineDevices.add(cacheVo);
+        } else {
+            onlineDevices = ListEx.newArrayList(cacheVo);
+        }
+        hashOperator.put(KEY_PREFIX + key, hashKey, JsonEx.toJsonString(onlineDevices));
     }
 
-    public <T> Map<String, T> getCacheMap(final String key) {
-        return redisTemplate.opsForHash().entries(key);
+    public void vehicleOffline(String key, String hashKey, String iccid) {
+        HashOperations<String, Object, Object> hashOperator = redisTemplate.opsForHash();
+        String cacheStr = (String) hashOperator.get(KEY_PREFIX + key, hashKey);
+        List<OnlineStatusVo> onlineDevices = JsonEx.parseArray(cacheStr, OnlineStatusVo.class);
+        onlineDevices.removeIf(data -> data.getIccid().equals(iccid));
+        if (CollectionUtils.isEmpty(onlineDevices)) {
+            hashOperator.delete(KEY_PREFIX + key, hashKey);
+        } else {
+            hashOperator.put(KEY_PREFIX + key, hashKey, JsonEx.toJsonString(onlineDevices));
+        }
     }
 
-    public <T> void setCacheMapValue(final String key, final String hKey, final T value) {
-        redisTemplate.opsForHash().put(key, hKey, value);
-    }
-
-    public <T> T getCacheMapValue(final String key, final String hKey) {
-        HashOperations<String, String, T> opsForHash = redisTemplate.opsForHash();
-        return opsForHash.get(key, hKey);
+    public boolean onlineStatus(String key, String hashKey, Predicate<OnlineStatusVo> predicate) {
+        if (ObjEx.isNull(predicate)) {
+            return redisTemplate.opsForHash().hasKey(KEY_PREFIX + key, hashKey);
+        }
+        Object cacheObj = redisTemplate.opsForHash().get(KEY_PREFIX + key, hashKey);
+        return Optional.ofNullable(cacheObj)
+                .map(obj -> (String) obj)
+                .map(data -> JsonEx.parseArray(data, OnlineStatusVo.class))
+                .orElseGet(ListEx::newArrayList)
+                .stream()
+                .anyMatch(predicate);
     }
 }
 

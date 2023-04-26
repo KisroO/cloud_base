@@ -3,14 +3,14 @@ package com.kisro.cloud;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+//import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
  * @author Kisro
  * @since 2022/10/26
  **/
 @SpringBootApplication
-@EnableDiscoveryClient
+//@EnableDiscoveryClient
 @MapperScan(basePackages = "com.kisro.cloud.mapper")
 public class ManageApplication {
     public static void main(String[] args) {

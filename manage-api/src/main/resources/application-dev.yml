@@ -1,0 +1,5 @@
+spring:
+  redis:
+    database: 8
+    host: 172.28.0.46
+    password: red12783@ehjiGq

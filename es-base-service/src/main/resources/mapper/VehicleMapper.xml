@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kisro.cloud.dao.VehicleMapper">
+    <insert id="batchInsert" parameterType="list">
+        insert into vehicle(`chassis_number`) values
+        <foreach collection="data" index="index" item="item" separator=",">
+            (#{item.chassisNumber})
+        </foreach>
+    </insert>
+</mapper>

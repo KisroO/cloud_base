@@ -7,6 +7,8 @@ import com.kisro.cloud.service.IReportService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
+
 /**
  * @author Kisro
  * @since 2022/10/26
@@ -14,6 +16,8 @@ import org.springframework.util.Assert;
 @Service
 public class ReportServiceImpl extends ServiceImpl<ReportMapper, Report> implements IReportService {
 
+    @Resource
+    ReportMapper reportMapper;
     @Override
     public Report reportInfo(Long id) {
         return baseMapper.selectById(id);
@@ -28,14 +32,22 @@ public class ReportServiceImpl extends ServiceImpl<ReportMapper, Report> impleme
     @Override
     public long insert(Report report) {
         Assert.notNull(report, "插入数据不能为空");
-        baseMapper.insert(report);
-        return report.getId();
+//        baseMapper.insert(report);
+        reportMapper.insertData(report);
+        return 1L;
     }
 
     @Override
     public void updateReport(Report report) {
         // 校验...
         baseMapper.updateById(report);
+    }
+
+    @Override
+    public Long countByUUID() {
+        Long count = reportMapper.count();
+        System.out.println(count);
+        return count;
     }
 
 

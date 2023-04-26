@@ -14,6 +14,7 @@
     <modules>
         <module>netty-base</module>
         <module>netty-app</module>
+        <module>netty_gateway</module>
     </modules>
 
     <dependencies>

@@ -11,6 +11,8 @@ server:
 #      client:
 #        username: root
 #        password: Map0935H@eY3
+hbase:
+  zookeeper.quorum: 10.24.50.17:2181,10.24.50.2:2181,10.24.50.11:2181
 spring:
   jackson:
     time-zone: GMT+8

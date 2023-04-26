@@ -13,6 +13,8 @@
         <module>netty</module>
         <module>es-base-service</module>
         <module>gateway</module>
+        <module>nxe_dev</module>
+        <module>excel_base</module>
     </modules>
 
     <parent>

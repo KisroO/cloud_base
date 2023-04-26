@@ -1,0 +1,6 @@
+spring:
+  elasticsearch:
+    rest:
+      uris: http://10.24.50.44:9200
+      username: elastic
+      password: S1M2poJOe9G3A7g
