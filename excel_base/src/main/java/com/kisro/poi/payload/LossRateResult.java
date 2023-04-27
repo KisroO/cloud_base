@@ -9,13 +9,15 @@ import lombok.Data;
  **/
 @Data
 public class LossRateResult {
-    @Excel(name = "有效应收报文数")
+    @Excel(name = "理论应收报文数")
     private Long receivableCount = 0L;
-    @Excel(name = "有效已收报文数")
+    @Excel(name = "实际已收报文数")
     private Long receivedCount = 0L;
     @Excel(name = "累计已收报文数")
     private Long totalCount = 0L;
-    @Excel(name = "丢包率")
-    private String lossRate = "0.0%";
+    @Excel(name = "丢包率(规则一)")
+    private String lossRate1 = "0.0%";
+    @Excel(name = "丢包率(规则二)")
+    private String lossRate2 = "0.0%";
 //    private List<List<OriginalMessage>> lossPacketList = ListEx.newArrayList();
 }

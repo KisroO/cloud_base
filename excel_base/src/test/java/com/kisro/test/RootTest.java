@@ -9,6 +9,7 @@ import com.nex.bu1.util.ListEx;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -74,5 +75,29 @@ public class RootTest {
         if (start < end) {
             daySplit.add(DoubleObjHolder.of(start, end));
         }
+    }
+    @Test
+    public void testRate(){
+        Long receivableCount = 5208L;
+        Long receivedCount = 2398L;
+        Long totalCount = 5223L;
+        // 丢包率(规则一)
+        BigDecimal receivableDecimal = new BigDecimal(receivableCount + "");
+        BigDecimal receivedDecimal = new BigDecimal(receivedCount + "");
+        BigDecimal totalCountDecimal = new BigDecimal(totalCount + "");
+        BigDecimal percentageDecimal = new BigDecimal("100");
+        BigDecimal res1 = receivableDecimal.subtract(receivedDecimal)
+                .divide(receivableDecimal, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(percentageDecimal);
+
+        System.out.println(res1.toPlainString());
+
+        double rate1 = (double)(receivableCount - receivedCount) / receivableCount * 100;
+        double rate2 = (double)(receivableCount - totalCount) / receivableCount * 100;
+        if(rate2<0.0){
+            rate2 = 0.0;
+        }
+        System.out.println(rate1);
+        System.out.println(rate2);
     }
 }

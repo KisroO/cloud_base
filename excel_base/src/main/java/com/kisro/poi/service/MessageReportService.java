@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -202,17 +203,57 @@ public class MessageReportService {
         result.setReceivedCount(totalReceivedCount);
         int realtimeDataSize = loadDataFromHBase(vin, realtimeList, date).size();
         result.setTotalCount((long) realtimeDataSize);
-        if (CollectionUtils.isNotEmpty(dataList)) {
-            try {
-                exportOriginMsg(vin, date, dataList);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        if (CollectionUtils.isNotEmpty(dataList)) {
+//            try {
+//                exportOriginMsg(vin, date, dataList);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+        calculateLossRate(result);
         afterReset();
         return result;
     }
 
+    public List<LossRateExport> newMultiStatV2(List<String> vinList,Date startDate,Date endDate){
+        List<LossRateExport> resultList = ListEx.newArrayList();
+        List<Date> dates = getDateList(startDate, endDate);
+        for (String vin : vinList) {
+            for (Date date : dates) {
+                LossRateExport export = new LossRateExport();
+                LossRateResult result = newStatV2(vin, date);
+                BeanUtils.copyProperties(result, export);
+                export.setVin(vin);
+                export.setDate(date);
+                resultList.add(export);
+            }
+        }
+        return resultList;
+    }
+
+
+    private void calculateLossRate(LossRateResult result){
+        Long receivableCount = result.getReceivableCount();
+        Long receivedCount = result.getReceivedCount();
+        Long totalCount = result.getTotalCount();
+        // 丢包率(规则一)
+        BigDecimal receivableDecimal = new BigDecimal(receivableCount + "");
+        BigDecimal receivedDecimal = new BigDecimal(receivedCount + "");
+        BigDecimal percentageDecimal = new BigDecimal("100");
+        BigDecimal rate1 = receivableDecimal.subtract(receivedDecimal)
+                .divide(receivableDecimal, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(percentageDecimal);
+        result.setLossRate1(rate1.toPlainString().concat("%"));
+        // 丢包率(规则二)
+        if(totalCount>receivableCount){
+            return;
+        }
+        BigDecimal totalCountDecimal = new BigDecimal(totalCount + "");
+        BigDecimal rate2 = receivableDecimal.subtract(totalCountDecimal)
+                .divide(receivableDecimal, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(percentageDecimal);
+        result.setLossRate2(rate2.toPlainString().concat("%"));
+    }
     private void exportStatInfo(Workbook workbook, String vin, Date date) throws IOException {
         FileOutputStream fos = null;
         try {

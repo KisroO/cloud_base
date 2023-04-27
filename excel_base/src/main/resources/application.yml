@@ -1,2 +1,8 @@
 server:
   port: 9000
+
+spring:
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+  mvc:
+    date-format: yyyy-MM-dd HH:mm:ss

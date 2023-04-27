@@ -123,6 +123,20 @@ public class FileController {
         }
     }
 
+    @GetMapping("/newMultiStat/v2")
+    public void newMultiStatV2(@RequestParam("vin") List<String> vin,
+                               @RequestParam("startDate") Date startDate,
+                               @RequestParam("endDate") Date endDate,
+                               @RequestParam("exportFlag") boolean exportFlag,
+                               HttpServletResponse response) throws IOException {
+        List<LossRateExport> list = messageReportService.newMultiStatV2(vin, startDate, endDate);
+        if (exportFlag) {
+            ExportEx.exportExcel(response, "丢包率统计", list, LossRateExport.class);
+        } else {
+            System.out.println(JsonEx.toJsonString(list));
+        }
+    }
+
     //    @GetMapping("/lossRateStat/v2/multi")
 //    public void newStatV2(@RequestParam("vin") List<String> vin,
 //                          @RequestParam("startDate") Date startDate,

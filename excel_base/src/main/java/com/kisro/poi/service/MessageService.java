@@ -282,7 +282,7 @@ public class MessageService {
         extraLossPacketInfo();
         result.setReceivableCount(totalReceivableCount);
         result.setReceivedCount(totalReceivedCount);
-        result.setLossRate(lossRate);
+//        result.setLossRate(lossRate);
         if (CollectionUtils.isNotEmpty(lossPacketInfoList)) {
             System.out.println(vin);
             System.out.println(JsonEx.toJsonString(lossPacketInfoList));
