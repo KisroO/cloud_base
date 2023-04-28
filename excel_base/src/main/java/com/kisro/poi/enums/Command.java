@@ -17,6 +17,7 @@ public interface Command {
     String LOCATION_REUPLOAD_DATA = "位置信息盲区批量上传";
     List<String> REAL_DATA_LIST = ListEx.newArrayList(REALTIME_DATA, REALTIME_REUPLOAD_DATA);
     List<String> LOCATION_DATA_LIST = ListEx.newArrayList(LOCATION_DATA, LOCATION_REUPLOAD_DATA);
+    List<String> NO_ACC_COMMAND_LIST = ListEx.newArrayList(VEHICLE_LOGIN,VEHICLE_LOGOUT,REALTIME_DATA,REALTIME_REUPLOAD_DATA);
 
     String LOCATION_FILE = "位置信息";
     String REALTIME_FILE = "实时信息";

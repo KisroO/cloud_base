@@ -2,10 +2,13 @@ package com.kisro.poi.controller;
 
 import com.kisro.poi.payload.LossRateExport;
 import com.kisro.poi.payload.LossRateResult;
+import com.kisro.poi.payload.LossRateResultExp;
 import com.kisro.poi.service.LossRateService;
 import com.nex.bu1.io.export.ExportEx;
 import com.nex.bu1.json.JsonEx;
 import com.nex.bu1.util.ListEx;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/stat")
 @RequiredArgsConstructor
+@Api(value = "统计Controller")
 public class StatController {
     private final LossRateService lossRateService;
 
@@ -32,20 +36,49 @@ public class StatController {
     public void singleStat(@RequestParam("vin") String vin,
                            @RequestParam("date") Date date,
                            @RequestParam("exportFlag") boolean exportFlag,
-                           HttpServletResponse response){
-        LossRateResult data = lossRateService.singleCarStat(vin, date);
+                           HttpServletResponse response) {
+        LossRateExport data = lossRateService.singleCarStat(vin, date);
         if (exportFlag) {
-            LossRateExport export = new LossRateExport();
-            BeanUtils.copyProperties(data, export);
-            export.setVin(vin);
-            export.setDate(date);
             try {
-                ExportEx.exportExcel(response, "丢包率统计", ListEx.newArrayList(export), LossRateExport.class);
+                ExportEx.exportExcel(response, "丢包率统计", ListEx.newArrayList(data), LossRateExport.class);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
             System.out.println(JsonEx.toJsonString(data));
         }
+    }
+
+    @ApiOperation(value = "单车统计v2")
+    @GetMapping("/singleStat/v2")
+    public void singleStatInfo(@RequestParam("vin") String vin,
+                               @RequestParam("date") Date date,
+                               @RequestParam(value = "exportFlag", required = false, defaultValue = "false") boolean exportFlag,
+                               @RequestParam(value = "exportDetailFlag", required = false, defaultValue = "false") boolean exportDetailFlag,
+                               HttpServletResponse response) {
+        if (exportFlag) {
+            try {
+                lossRateService.exportSingleStat(vin,date,exportDetailFlag,response);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println(JsonEx.toJsonString(lossRateService.singleCarStat(vin,date)));
+        }
+    }
+
+    /**
+     * 批量统计
+     * @param vin
+     * @param startDate
+     * @param exportFlag
+     * @param exportDetailFlag
+     * @param response
+     */
+    public void multiStat(@RequestParam("vin") String vin,
+                          @RequestParam("startDate") Date startDate,
+                          @RequestParam(value = "exportFlag", required = false, defaultValue = "false") boolean exportFlag,
+                          @RequestParam(value = "exportDetailFlag", required = false, defaultValue = "false") boolean exportDetailFlag,
+                          HttpServletResponse response) {
     }
 }

@@ -293,15 +293,15 @@ public class MessageReportService {
         String dateStr = DateEx.format(date, DateEx.FMT_YMD2);
 //        List<AccOriginMsg> originMsgList;
         Pair<Date, Date> datePair = betweenDates(date);
-        List<OriginalMessage> list = hBaseService.findList(vin, datePair.getLeft(), datePair.getRight(), commands);
-        List<AccOriginMsg> msgList = ListEx.newArrayList();
-        list.stream()
-                .filter(item -> ObjEx.isNotNull(item.getAcquisitionTime()))
-                .forEach(item -> {
-                    AccOriginMsg accOriginMsg = new AccOriginMsg();
-                    BeanUtils.copyProperties(item, accOriginMsg);
-                    msgList.add(accOriginMsg);
-                });
+        List<AccOriginMsg> msgList = hBaseService.findList(vin, datePair.getLeft(), datePair.getRight(), commands);
+//        List<AccOriginMsg> msgList = ListEx.newArrayList();
+//        list.stream()
+//                .filter(item -> ObjEx.isNotNull(item.getAcquisitionTime()))
+//                .forEach(item -> {
+//                    AccOriginMsg accOriginMsg = new AccOriginMsg();
+//                    BeanUtils.copyProperties(item, accOriginMsg);
+//                    msgList.add(accOriginMsg);
+//                });
 
         return msgList.stream()
                 .filter(item -> checkDate(item.getAcquisitionTime(), datePair.getLeft(), datePair.getRight()))

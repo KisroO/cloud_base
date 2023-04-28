@@ -2,6 +2,7 @@ package com.kisro.test;
 
 import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
 import com.kisro.poi.payload.LossRateExport;
+import com.kisro.poi.util.CommonUtils;
 import com.nex.bu1.bean.DoubleObjHolder;
 import com.nex.bu1.json.JsonEx;
 import com.nex.bu1.util.DateEx;
@@ -99,5 +100,18 @@ public class RootTest {
         }
         System.out.println(rate1);
         System.out.println(rate2);
+    }
+
+    @Test
+    public void testHexParse(){
+        String hex = "F4";
+        Integer res = Integer.valueOf(hex, 16);
+        System.out.println( res);
+    }
+
+    @Test
+    public void testDate(){
+        List<Date> recentSevenDate = CommonUtils.getRecentSevenDate(DateEx.now());
+        System.out.println(JsonEx.toJsonString(recentSevenDate));
     }
 }
