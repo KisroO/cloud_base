@@ -9,6 +9,8 @@ import org.apache.hadoop.hbase.types.RawInteger;
 import javax.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,9 +36,18 @@ public class CommonUtils {
 
     public static boolean checkDate(Date target, Date begin, Date end) {
         long targetTime = target.getTime();
+        return checkDate(targetTime,begin,end);
+    }
+
+    public static boolean checkDate(Long targetTime, Date begin, Date end) {
         return targetTime > begin.getTime() && targetTime < end.getTime();
     }
 
+    /**
+     * 获取开始和结束时间
+     * @param date
+     * @return
+     */
     public static Pair<Date, Date> betweenDates(Date date) {
         Date begin = DateEx.beginOfDay(date);
         Date end = DateEx.endOfDay(date);
@@ -51,5 +62,22 @@ public class CommonUtils {
             dateList.add(date);
         }
         return dateList;
+    }
+
+    /**
+     * 获取日期列表
+     * @param startDate
+     * @param endDate
+     * @return
+     */
+    public static List<Date> betweenDateList(Date startDate, Date endDate) {
+        LocalDate startBegin = DateEx.toLocalDate(DateEx.beginOfDay(startDate));
+        LocalDate endBegin = DateEx.toLocalDate(DateEx.beginOfDay(endDate));
+        long betweenDateNum = ChronoUnit.DAYS.between(startBegin, endBegin);
+        return IntStream.iterate(0, i -> i + 1)
+                .limit(betweenDateNum)
+                .mapToObj(startBegin::plusDays)
+                .map(DateEx::toDate)
+                .collect(Collectors.toList());
     }
 }

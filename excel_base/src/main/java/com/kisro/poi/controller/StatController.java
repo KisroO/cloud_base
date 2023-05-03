@@ -58,27 +58,36 @@ public class StatController {
                                HttpServletResponse response) {
         if (exportFlag) {
             try {
-                lossRateService.exportSingleStat(vin,date,exportDetailFlag,response);
+                lossRateService.exportSingleStat(vin, date, exportDetailFlag, response);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
-            System.out.println(JsonEx.toJsonString(lossRateService.singleCarStat(vin,date)));
+            System.out.println(JsonEx.toJsonString(lossRateService.singleCarStat(vin, date)));
         }
     }
 
     /**
      * 批量统计
-     * @param vin
+     *
+     * @param vinList
      * @param startDate
      * @param exportFlag
      * @param exportDetailFlag
      * @param response
      */
-    public void multiStat(@RequestParam("vin") String vin,
+    @ApiOperation(value = "多车统计v2")
+    @GetMapping("/multiStat/v2")
+    public void multiStat(@RequestParam("vin") List<String> vinList,
                           @RequestParam("startDate") Date startDate,
+                          @RequestParam("endDate") Date endDate,
                           @RequestParam(value = "exportFlag", required = false, defaultValue = "false") boolean exportFlag,
                           @RequestParam(value = "exportDetailFlag", required = false, defaultValue = "false") boolean exportDetailFlag,
                           HttpServletResponse response) {
+        if (exportFlag) {
+            lossRateService.exportMultiStat(vinList, startDate, endDate,exportDetailFlag,response);
+        } else {
+            System.out.println(JsonEx.toJsonString(lossRateService.multiCarStat(vinList,startDate,endDate,exportDetailFlag)));
+        }
     }
 }

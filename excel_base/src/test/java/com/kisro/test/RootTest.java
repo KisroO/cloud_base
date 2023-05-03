@@ -1,12 +1,15 @@
 package com.kisro.test;
 
 import cn.afterturn.easypoi.excel.entity.params.ExcelExportEntity;
+import com.alibaba.fastjson.JSON;
 import com.kisro.poi.payload.LossRateExport;
+import com.kisro.poi.payload.LossRateResultExp;
 import com.kisro.poi.util.CommonUtils;
 import com.nex.bu1.bean.DoubleObjHolder;
 import com.nex.bu1.json.JsonEx;
 import com.nex.bu1.util.DateEx;
 import com.nex.bu1.util.ListEx;
+import net.minidev.json.JSONObject;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -80,26 +83,22 @@ public class RootTest {
     @Test
     public void testRate(){
         Long receivableCount = 5208L;
-        Long receivedCount = 2398L;
+        Long receivedCount = 5100L;
         Long totalCount = 5223L;
         // 丢包率(规则一)
         BigDecimal receivableDecimal = new BigDecimal(receivableCount + "");
         BigDecimal receivedDecimal = new BigDecimal(receivedCount + "");
-        BigDecimal totalCountDecimal = new BigDecimal(totalCount + "");
         BigDecimal percentageDecimal = new BigDecimal("100");
-        BigDecimal res1 = receivableDecimal.subtract(receivedDecimal)
+        BigDecimal rate1 = receivableDecimal.subtract(receivedDecimal)
                 .divide(receivableDecimal, 4, BigDecimal.ROUND_HALF_UP)
                 .multiply(percentageDecimal);
-
-        System.out.println(res1.toPlainString());
-
-        double rate1 = (double)(receivableCount - receivedCount) / receivableCount * 100;
-        double rate2 = (double)(receivableCount - totalCount) / receivableCount * 100;
-        if(rate2<0.0){
-            rate2 = 0.0;
+        String rateStr = rate1.toPlainString();
+        int length = rateStr.length();
+        if(length >4){
+            rateStr = rateStr.substring(0, length -2);
         }
         System.out.println(rate1);
-        System.out.println(rate2);
+        System.out.println(rateStr);
     }
 
     @Test
@@ -113,5 +112,13 @@ public class RootTest {
     public void testDate(){
         List<Date> recentSevenDate = CommonUtils.getRecentSevenDate(DateEx.now());
         System.out.println(JsonEx.toJsonString(recentSevenDate));
+    }
+
+    @Test
+    public void testNpe(){
+        LossRateResultExp resultExp = new LossRateResultExp();
+        List<LossRateExport> list = ListEx.newArrayList();
+        list.add(resultExp.getResult());
+        System.out.println(JSON.toJSONString(list));
     }
 }

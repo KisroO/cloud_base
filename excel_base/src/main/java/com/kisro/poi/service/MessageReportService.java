@@ -6,13 +6,13 @@ import cn.afterturn.easypoi.excel.entity.ExportParams;
 import cn.afterturn.easypoi.excel.entity.ImportParams;
 import com.kisro.poi.enums.Command;
 import com.kisro.poi.payload.*;
+import com.kisro.poi.util.CommonUtils;
 import com.nex.bu1.json.JsonEx;
 import com.nex.bu1.lang.ObjEx;
 import com.nex.bu1.lang.StrEx;
 import com.nex.bu1.util.DateEx;
 import com.nex.bu1.util.ListEx;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.BeanUtils;
@@ -217,7 +217,7 @@ public class MessageReportService {
 
     public List<LossRateExport> newMultiStatV2(List<String> vinList,Date startDate,Date endDate){
         List<LossRateExport> resultList = ListEx.newArrayList();
-        List<Date> dates = getDateList(startDate, endDate);
+        List<Date> dates = CommonUtils.betweenDateList(startDate, endDate);
         for (String vin : vinList) {
             for (Date date : dates) {
                 LossRateExport export = new LossRateExport();
@@ -384,7 +384,7 @@ public class MessageReportService {
 
     public List<LossRateExport> newMultiStat(List<String> vinList, Date startDate, Date endDate) {
         List<LossRateExport> resultList = ListEx.newArrayList();
-        List<Date> dates = getDateList(startDate, endDate);
+        List<Date> dates = CommonUtils.betweenDateList(startDate, endDate);
         for (String vin : vinList) {
             for (Date date : dates) {
                 LossRateExport export = new LossRateExport();
@@ -398,14 +398,5 @@ public class MessageReportService {
         return resultList;
     }
 
-    private List<Date> getDateList(Date startDate, Date endDate) {
-        LocalDate startBegin = DateEx.toLocalDate(DateEx.beginOfDay(startDate));
-        LocalDate endBegin = DateEx.toLocalDate(DateEx.beginOfDay(endDate));
-        long betweenDateNum = ChronoUnit.DAYS.between(startBegin, endBegin);
-        return IntStream.iterate(0, i -> i + 1)
-                .limit(betweenDateNum)
-                .mapToObj(startBegin::plusDays)
-                .map(DateEx::toDate)
-                .collect(Collectors.toList());
-    }
+
 }

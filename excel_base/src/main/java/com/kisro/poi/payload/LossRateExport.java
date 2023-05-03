@@ -11,7 +11,7 @@ import java.util.Date;
  **/
 @Data
 public class LossRateExport extends LossRateResult {
-    @Excel(name = "VIN")
+    @Excel(name = "VIN",width = 20.0)
     private String vin;
     @Excel(name = "统计日期", exportFormat = "yyyy/MM/dd")
     private Date date;

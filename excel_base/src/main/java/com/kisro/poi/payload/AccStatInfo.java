@@ -20,24 +20,24 @@ public class AccStatInfo {
     // 起始索引
     private int startIndex;
     // 起始时间
-    @Excel(name = "开始时间", exportFormat = "yyyy/MM/dd HH:mm:ss")
+    @Excel(name = "开始时间", exportFormat = "yyyy/MM/dd HH:mm:ss",width = 20.0)
     private Date startDate;
     // 接收索引
     private int endIndex;
     // 结束时间(理论应收 不完整ACC ON-OFF)
-    @Excel(name = "结束时间", exportFormat = "yyyy/MM/dd HH:mm:ss")
+    @Excel(name = "结束时间", exportFormat = "yyyy/MM/dd HH:mm:ss",width = 20.0)
     private Date endDate;
     // 已收报文数(完整ACC ON-OFF)
-    @Excel(name = "累计已收报文数")
+    @Excel(name = "累计已收报文数",type = 10)
     private int receivedCount = 0;
     // 应收报文数(理论应收)
-    @Excel(name = "理论应收报文数")
+    @Excel(name = "应收报文数",type = 10)
     private int receivableCount;
     // 区间累计实收实时与不发信息
-    @Excel(name = "实际已收报文数")
+    @Excel(name = "已收报文数",type = 10)
     private int totalCount;
     // 结束时间(理论实际应收 完整ACC ON-FF)
-    @Excel(name = "离线时间(异常下线无离线时间)", exportFormat = "yyyy/MM/dd HH:mm:ss")
+    @Excel(name = "离线时间(异常下线无离线时间)", exportFormat = "yyyy/MM/dd HH:mm:ss",width = 20.0)
     private Date logoutDate;
     // 区间内是否丢包
     private boolean hasLoss;

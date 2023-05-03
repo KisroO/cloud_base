@@ -92,6 +92,8 @@ public class HBaseService {
         Pair<Long, Long> pair = Pair.of(startDate.getTime(), endDate.getTime());
         // 结束搜索标志 v1,v2都为true表示两个命令都已查找结束，无需进行下次查询
         DoubleObjHolder<Boolean, Boolean> endFlagPair = DoubleObjHolder.of(false, false);
+        // 原始数据
+        List<OriginalMessageRecord> dataList = ListEx.newArrayList();
         for (Integer command : commandList) {
             String startRow = EsUtil.createOriginalRowKey(vin, command, pair.getRight());
             String endRow = EsUtil.createOriginalRowKey(vin, command, pair.getLeft());
@@ -102,28 +104,32 @@ public class HBaseService {
                         .stream()
                         .sorted(Comparator.comparing(OriginalMessageRecord::getAcquisitionTime))
                         .collect(Collectors.toList());
+                dataList.addAll(sourceList);
             } catch (ColumnarClientException e) {
                 e.printStackTrace();
             }
-            if (CollectionUtils.isEmpty(sourceList)) {
-                continue;
-            }
-            // 计算是否需要继续查找补发与位置盲区数据
-            for (OriginalMessageRecord record : sourceList) {
-                Long acquisitionTime = record.getAcquisitionTime();
-                if (CommonUtils.checkDatePartition(targetDate, acquisitionTime)) {
-                    // 补发或位置盲区数据在目标日期中则加入集合
-                    resultList.add(record);
-                } else {
-                    // 补发和位置盲区都无目标日期数据，返回数据列表并设置下次查询标志为false
-                    if (endFlagPair.v1 && endFlagPair.v2) {
-                        return Pair.of(resultList, false);
-                    }
-                    if (command == 0x03) {
-                        endFlagPair.setV1(true);
-                    } else {
-                        endFlagPair.setV2(true);
-                    }
+        }
+        if (CollectionUtils.isEmpty(dataList)) {
+            return Pair.of(resultList,true);
+        }
+        // 计算是否需要继续查找补发与位置盲区数据
+        // todo 待优化
+        for (OriginalMessageRecord record : dataList) {
+            Long acquisitionTime = record.getAcquisitionTime();
+            String commandHexStr = record.getOriginalMessage().substring(4, 6);
+            Integer commandInt = Integer.valueOf(commandHexStr, 16);
+            if (CommonUtils.checkDatePartition(targetDate, acquisitionTime)) {
+                // 补发或位置盲区数据在目标日期中则加入集合
+                resultList.add(record);
+            } else {
+                // 补发和位置盲区都无目标日期数据，返回数据列表并设置下次查询标志为false
+                if (endFlagPair.v1 && endFlagPair.v2) {
+                    return Pair.of(resultList, false);
+                }
+                if (commandInt == 0x03 && !endFlagPair.v1) {
+                    endFlagPair.setV1(true);
+                } else if(commandInt == 0xF4 && !endFlagPair.v2){
+                    endFlagPair.setV2(true);
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.kisro.poi.payload;
 
+import com.nex.bu1.util.ListEx;
 import lombok.Data;
 
 import java.util.List;
@@ -17,5 +18,5 @@ public class LossRateResultExp {
     /**
      * 统计详情(统计区间)
      */
-    private List<AccStatInfo> detailList;
+    private List<AccStatInfo> detailList = ListEx.newArrayList();
 }

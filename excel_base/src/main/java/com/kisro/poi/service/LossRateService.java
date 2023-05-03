@@ -6,6 +6,7 @@ import com.kisro.poi.payload.*;
 import com.kisro.poi.util.CommonUtils;
 import com.kisro.poi.util.ExportUtils;
 import com.nex.bu1.io.export.ExportEx;
+import com.nex.bu1.json.JsonEx;
 import com.nex.bu1.lang.ObjEx;
 import com.nex.bu1.lang.StrEx;
 import com.nex.bu1.util.DateEx;
@@ -15,15 +16,13 @@ import com.nxe.galaxy.dynamic.commons.entity.OriginalMessageRecord;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -81,8 +80,11 @@ public class LossRateService {
         result.setVin(vin);
         result.setDate(date);
         // 1. 加载数据
-        List<AccOriginMsg> dataList = loadData(vin, COMMAND_LIST, date);
         LossRateResultExp resultExp = new LossRateResultExp();
+        List<AccOriginMsg> dataList = loadData(vin, COMMAND_LIST, date);
+        if(CollectionUtils.isEmpty(dataList)){
+            return resultExp;
+        }
         // 统计
         generalStat(dataList, statInfoList);
         // 计算区间报文数
@@ -95,6 +97,7 @@ public class LossRateService {
         if (needDetailFlag) {
             resultExp.setDetailList(statInfoList);
         }
+        System.out.println(JsonEx.toJsonString(resultExp.getResult()));
         return resultExp;
     }
 
@@ -192,23 +195,33 @@ public class LossRateService {
      * @return
      */
     private List<AccOriginMsg> loadData(String vin, List<Integer> commands, Date date) {
-        Pair<Date, Date> datePair = betweenDates(date);
+        List<AccOriginMsg> resList = ListEx.newArrayList();
+        Pair<Date, Date> datePair = CommonUtils.betweenDates(date);
         // 获取统计日期当天的数据
-        List<OriginalMessageRecord> list = hBaseService.findOriginalList(vin, datePair.getLeft(), datePair.getRight(), commands);
-        if (CollectionUtils.isNotEmpty(list)) {
-            // 继续获取补发与位置盲区数据(最多获取未来7天)
-            List<Date> dateList = CommonUtils.getRecentSevenDate(date);
-            for (Date nextDate : dateList) {
-                Pair<Date, Date> pair = CommonUtils.betweenDates(nextDate);
-                // 获取下一天的补发与位置盲区数据
-                Pair<List<OriginalMessageRecord>, Boolean> nextDataPair = hBaseService.findNextReUploadData(vin, pair.getLeft(), pair.getRight(), REUPLOAD_DATA_LIST, date);
-                list.addAll(nextDataPair.getLeft());
-                if (!nextDataPair.getRight()) {
-                    break;
-                }
+        Date beginDate = datePair.getLeft();
+        Date endDate = datePair.getRight();
+        List<OriginalMessageRecord> list = hBaseService.findOriginalList(vin, beginDate, endDate, commands)
+                .stream()
+                .filter(item -> CommonUtils.checkDate(item.getAcquisitionTime(), beginDate, endDate))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(list)) {
+            return resList;
+        }
+        // 继续获取补发与位置盲区数据(最多获取未来7天)
+        List<Date> dateList = CommonUtils.getRecentSevenDate(date);
+        for (Date nextDate : dateList) {
+            if (nextDate.getTime() > DateEx.nowMilli()) {
+                break;
+            }
+            Pair<Date, Date> pair = CommonUtils.betweenDates(nextDate);
+            // 获取下一天的补发与位置盲区数据
+            Pair<List<OriginalMessageRecord>, Boolean> nextDataPair = hBaseService.findNextReUploadData(vin, pair.getLeft(), pair.getRight(), REUPLOAD_DATA_LIST, date);
+            list.addAll(nextDataPair.getLeft());
+            if (!nextDataPair.getRight()) {
+                break;
             }
         }
-        List<AccOriginMsg> resList = hBaseService.processOriginalMessage(list, vin);
+        resList = hBaseService.processOriginalMessage(list, vin);
         list = null;
         return resList.stream()
                 .sorted(Comparator.comparing(AccOriginMsg::getAcquisitionTime))
@@ -243,7 +256,8 @@ public class LossRateService {
         BigDecimal rate1 = receivableDecimal.subtract(receivedDecimal)
                 .divide(receivableDecimal, 4, BigDecimal.ROUND_HALF_UP)
                 .multiply(percentageDecimal);
-        result.setLossRate1(rate1.toPlainString().concat("%"));
+        String rate1Str = rate1.toPlainString();
+        result.setLossRate1(formatRate(rate1Str));
         // 丢包率(规则二)
         if (totalCount > receivableCount) {
             return;
@@ -252,21 +266,29 @@ public class LossRateService {
         BigDecimal rate2 = receivableDecimal.subtract(totalCountDecimal)
                 .divide(receivableDecimal, 4, BigDecimal.ROUND_HALF_UP)
                 .multiply(percentageDecimal);
-        result.setLossRate2(rate2.toPlainString().concat("%"));
+        String rate2Str = rate2.toPlainString();
+        result.setLossRate2(formatRate(rate2Str));
     }
 
-    public void exportStatInfo(List<LossRateExport> resultList, HttpServletResponse response) {
-        if (CollectionUtils.isEmpty(resultList)) {
-            return;
+//    public void exportStatInfo(List<LossRateExport> resultList, HttpServletResponse response) {
+//        if (CollectionUtils.isEmpty(resultList)) {
+//            return;
+//        }
+//        String vin = resultList.get(0).getVin();
+//        ExportParams exportParams = new ExportParams();
+//        exportParams.setSheetName(exportStatFileName(vin));
+//        try {
+//            ExportEx.exportExcel(response, exportStatFileName(vin), resultList, LossRateExport.class);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+    private String formatRate(String rateStr){
+        int length = rateStr.length();
+        if(length>4){
+            return rateStr.substring(0, length -2).concat("%");
         }
-        String vin = resultList.get(0).getVin();
-        ExportParams exportParams = new ExportParams();
-        exportParams.setSheetName(exportStatFileName(vin));
-        try {
-            ExportEx.exportExcel(response, exportStatFileName(vin), resultList, LossRateExport.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return rateStr.concat("%");
     }
 
     public void exportSingleStat(String vin, Date date, boolean needDetailFlag, HttpServletResponse response) {
@@ -280,7 +302,7 @@ public class LossRateService {
             return;
         }
         List<LossRateExport> resultList = ListEx.newArrayList(result);
-        String fileName = exportStatFileName(vin).concat(".xlsx");
+        String fileName = vin.concat("_丢包率.xls");
         List<Map<String, Object>> sheetList = ListEx.newArrayList();
 
         ExportParams lossExportParam = new ExportParams();
@@ -292,7 +314,7 @@ public class LossRateService {
         lossSheetMap.put("data", resultList);
         sheetList.add(lossSheetMap);
 
-        if(CollectionUtils.isNotEmpty(detailList)){
+        if (CollectionUtils.isNotEmpty(detailList)) {
             ExportParams detailExportParam = new ExportParams();
             detailExportParam.setSheetName("统计区间信息");
 
@@ -305,7 +327,61 @@ public class LossRateService {
         ExportUtils.exportMultiSheet(sheetList, fileName, response);
     }
 
-    private String exportStatFileName(String vin) {
-        return vin.concat("_丢包率");
+//    private String exportStatFileName(String vin) {
+//        return vin.concat("_丢包率");
+//    }
+
+    // todo 完善批量统计
+    public List<LossRateResultExp> multiCarStat(List<String> vinList, Date startDate, Date endDate, boolean exportDetailFlag) {
+        if (CollectionUtils.isEmpty(vinList)) {
+            return ListEx.newArrayList();
+        }
+        List<LossRateResultExp> resultList = ListEx.newArrayList();
+        List<Date> dates = CommonUtils.betweenDateList(startDate, endDate);
+        for (String vin : vinList) {
+            for (Date date : dates) {
+                LossRateResultExp resultExp = singleStat(vin, date, exportDetailFlag);
+                resultList.add(resultExp);
+            }
+        }
+        return resultList;
+    }
+
+    public void exportMultiStat(List<String> vinList, Date startDate, Date endDate, boolean exportDetailFlag, HttpServletResponse response) {
+        List<LossRateResultExp> list = multiCarStat(vinList, startDate, endDate, exportDetailFlag);
+        List<Map<String, Object>> sheetList = ListEx.newArrayList();
+        List<LossRateExport> lossRateExportList = ListEx.newArrayList();
+        String fileName = vinList.size() + "台车丢包率统计.xls";
+        // 统计详情信息
+        for (LossRateResultExp resultExp : list) {
+            LossRateExport result = resultExp.getResult();
+            if(ObjEx.isNotNull(result)){
+                lossRateExportList.add(result);
+            }
+            List<AccStatInfo> detailList = resultExp.getDetailList();
+            if (exportDetailFlag && CollectionUtils.isNotEmpty(detailList)) {
+                String vin = result.getVin();
+                String dateStr = DateEx.format(result.getDate(), DateEx.FMT_YMD2);
+
+                Map<String, Object> detailSheetMap = MapEx.newHashMap();
+                ExportParams detailParams = new ExportParams();
+                detailParams.setSheetName(vin + "_" + dateStr);
+                detailSheetMap.put("title", detailParams);
+                detailSheetMap.put("entity", AccStatInfo.class);
+                detailSheetMap.put("data", detailList);
+
+                sheetList.add(detailSheetMap);
+            }
+        }
+        // 丢包率信息
+        Map<String, Object> lossRateMap = MapEx.newHashMap();
+        ExportParams lossRateParams = new ExportParams();
+        lossRateParams.setSheetName("丢包率");
+        lossRateMap.put("title", lossRateParams);
+        lossRateMap.put("entity", LossRateExport.class);
+        lossRateMap.put("data", lossRateExportList);
+        sheetList.add(0, lossRateMap);
+
+        ExportUtils.exportMultiSheet(sheetList, fileName, response);
     }
 }
