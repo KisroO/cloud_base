@@ -17,10 +17,7 @@ import java.math.BigDecimal;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -120,5 +117,56 @@ public class RootTest {
         List<LossRateExport> list = ListEx.newArrayList();
         list.add(resultExp.getResult());
         System.out.println(JSON.toJSONString(list));
+    }
+
+    @Test
+    public void genSn(){
+        int start = 9010000;
+        String prefix = "00570465";
+        String suffix = "190820";
+        List<String> snList = ListEx.newArrayList();
+        for (int i = 0; i < 30; i++) {
+            start +=1;
+            String sn = prefix.concat(start + "").concat(suffix);
+            snList.add(sn);
+        }
+        System.out.println(JsonEx.toJsonString(snList));
+    }
+
+    @Test
+    public void testStat() throws ParseException {
+        Date startDate = DateEx.parse("2023/04/29 07:59:20",DateEx.FMT_YMD_HMS3);
+        Date endDate = DateEx.parse("2023/04/29 09:01:38",DateEx.FMT_YMD_HMS3);
+        Date logoutDate = DateEx.parse("2023/04/29 09:01:38",DateEx.FMT_YMD_HMS3);
+        long startTime = startDate.getTime();
+        long endTime = endDate.getTime();
+        // 离线时间
+        Date optionLogoutDate = Optional.ofNullable(logoutDate).orElse(startDate);
+        long completeDateTime = optionLogoutDate.getTime();
+        long time = (endTime - startTime) / 1000;
+        long actualTime = (completeDateTime - startTime) / 1000;
+        // 最少应收
+        int receivable = (int) Math.round((double) time / 10);
+        // 理论已收
+        int received = (int) Math.round((double) actualTime / 10);
+        System.out.println(Math.round((double) actualTime / 10));
+        System.out.println(Math.round((double) time / 10));
+//        setReceivedCount(received);
+        int receivedCount = received;
+        if (receivable < receivedCount) {
+            receivable = receivedCount;
+        }
+        // 计算完整ACC ON - OFF区间实收报文数
+        long totalCount = 375L;
+        int totalCountInt = (int) totalCount;
+        if(receivable < totalCount){
+            receivable = totalCountInt;
+            if(logoutDate.compareTo(endDate) == 0){
+
+            }
+        }
+        System.out.println(received);
+        System.out.println(receivable);
+        System.out.println(totalCountInt);
     }
 }

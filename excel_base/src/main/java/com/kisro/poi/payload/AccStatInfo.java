@@ -28,13 +28,13 @@ public class AccStatInfo {
     @Excel(name = "结束时间", exportFormat = "yyyy/MM/dd HH:mm:ss",width = 20.0)
     private Date endDate;
     // 已收报文数(完整ACC ON-OFF)
-    @Excel(name = "累计已收报文数",type = 10)
+    @Excel(name = "实际已收报文数",type = 10)
     private int receivedCount = 0;
     // 应收报文数(理论应收)
-    @Excel(name = "应收报文数",type = 10)
+    @Excel(name = "理论应收报文数",type = 10)
     private int receivableCount;
     // 区间累计实收实时与不发信息
-    @Excel(name = "已收报文数",type = 10)
+    @Excel(name = "累计已收报文数",type = 10)
     private int totalCount;
     // 结束时间(理论实际应收 完整ACC ON-FF)
     @Excel(name = "离线时间(异常下线无离线时间)", exportFormat = "yyyy/MM/dd HH:mm:ss",width = 20.0)
@@ -60,7 +60,7 @@ public class AccStatInfo {
         // 最少应收
         int receivable = (int) Math.round((double) time / 10);
         // 理论已收
-        int received = (int) Math.floor((double) actualTime / 10);
+        int received = (int) Math.round((double) actualTime / 10);
         setReceivedCount(received);
         if (receivable < receivedCount) {
             receivable = receivedCount;
@@ -69,7 +69,14 @@ public class AccStatInfo {
         long totalCount = partitionData.stream()
                 .filter(item -> CommonUtils.checkDate(item.getAcquisitionTime(), startDate, optionLogoutDate))
                 .count();
-        setTotalCount((int) totalCount);
+        int totalCountInt = (int) totalCount;
+        if(receivable < totalCount){
+            receivable = totalCountInt;
+            if(endDate.compareTo(logoutDate) == 0){
+                setReceivedCount(receivable);
+            }
+        }
+        setTotalCount(totalCountInt);
         setReceivableCount(receivable);
         setHasLoss(receivedCount < receivableCount);
     }

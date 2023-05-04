@@ -1,5 +1,6 @@
 package com.kisro.poi.service;
 
+import cn.afterturn.easypoi.excel.ExcelExportUtil;
 import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.kisro.poi.enums.Command;
 import com.kisro.poi.payload.*;
@@ -12,17 +13,22 @@ import com.nex.bu1.lang.StrEx;
 import com.nex.bu1.util.DateEx;
 import com.nex.bu1.util.ListEx;
 import com.nex.bu1.util.MapEx;
+import com.nex.bu1.util.ThreadPoolEx;
 import com.nxe.galaxy.dynamic.commons.entity.OriginalMessageRecord;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -91,14 +97,46 @@ public class LossRateService {
         processStatData(statInfoList, result);
         // 计算丢包率
         calculateLossRate(result);
-        dataList = null;
         resultExp.setResult(result);
         // 导出统计详情
         if (needDetailFlag) {
             resultExp.setDetailList(statInfoList);
         }
+        // 临时导出
+//        statMsgExport(dataList,vin,date);
+        dataList = null;
         System.out.println(JsonEx.toJsonString(resultExp.getResult()));
         return resultExp;
+    }
+
+    private void statMsgExport(List<AccOriginMsg> dataList,String vin,Date date){
+        ExportParams exportParams = new ExportParams();
+        String fileName = vin + "_" + DateEx.format(date, DateEx.FMT_YM1) + "-报文数据";
+        exportParams.setSheetName(fileName);
+        Workbook workbook = null;
+        FileOutputStream fos = null;
+        try {
+            workbook = ExcelExportUtil.exportExcel(exportParams, AccOriginMsg.class, dataList);
+            fos = new FileOutputStream(new File(fileName.concat(".xls")));
+            workbook.write(fos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(fos!=null){
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(workbook!=null){
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public void generalStat(List<AccOriginMsg> dataList, List<AccStatInfo> statInfoList) {
@@ -331,7 +369,6 @@ public class LossRateService {
 //        return vin.concat("_丢包率");
 //    }
 
-    // todo 完善批量统计
     public List<LossRateResultExp> multiCarStat(List<String> vinList, Date startDate, Date endDate, boolean exportDetailFlag) {
         if (CollectionUtils.isEmpty(vinList)) {
             return ListEx.newArrayList();
@@ -340,6 +377,8 @@ public class LossRateService {
         List<Date> dates = CommonUtils.betweenDateList(startDate, endDate);
         for (String vin : vinList) {
             for (Date date : dates) {
+//                LossRateResultExp resultExp = new LossRateResultExp();
+//                Future<LossRateResultExp> future = ThreadPoolEx.submit(() -> singleStat(vin, date, exportDetailFlag), resultExp);
                 LossRateResultExp resultExp = singleStat(vin, date, exportDetailFlag);
                 resultList.add(resultExp);
             }
